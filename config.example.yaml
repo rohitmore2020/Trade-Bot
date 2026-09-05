@@ -1,0 +1,56 @@
+# ==============================================================================
+# Trade-Bot System & Strategy Configuration Example
+# ==============================================================================
+
+system:
+  environment: BACKTEST
+  mode: BACKTEST
+  allow_live_trading: false
+  time_zone: "Asia/Kolkata"
+
+market:
+  exchange: "NSE"
+  segment: "EQ"
+  market_open_time: "09:15:00"
+  market_close_time: "15:30:00"
+  intraday_square_off_time: "15:15:00"
+  no_new_orders_after_time: "15:00:00"
+  orb_opening_duration_minutes: 15 # 09:15 to 09:30 IST
+
+broker:
+  name: "BACKTEST" # BACKTEST | PAPER | UPSTOX
+  slippage_model:
+    type: "fixed_percentage"
+    percentage: 0.0005 # 0.05% slippage
+  commission_model:
+    brokerage_per_order: 20.0
+    stt_percentage: 0.00025
+    transaction_charges_percentage: 0.0000345
+    gst_percentage: 0.18
+    sebi_charges_percentage: 0.000001
+    stamp_duty_percentage: 0.00003
+
+risk:
+  initial_capital: 100000.0
+  max_daily_loss: 5000.0
+  max_loss_per_trade: 1500.0
+  max_position_size_per_trade: 100000.0
+  max_open_positions: 3
+  max_daily_trades: 10
+  risk_per_trade_percentage: 0.01 # 1% account risk per trade
+  enforce_stop_loss: true
+  circuit_breaker_enabled: true
+
+scanner:
+  universe_name: "NIFTY50"
+  min_average_volume_30d: 500000
+  min_turnover_cr: 10.0
+  max_spread_percentage: 0.001
+
+logging:
+  level: "INFO"
+  format: "JSON" # JSON | CONSOLE
+  log_dir: "logs"
+  audit_dir: "audit"
+  enable_console: true
+  enable_file: true
