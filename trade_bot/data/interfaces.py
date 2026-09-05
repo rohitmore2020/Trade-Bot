@@ -13,9 +13,12 @@ import pandas as pd
 from trade_bot.domain.models import Candle, Tick
 
 
+from trade_bot.data.events import ConnectionStatus, MarketDataEvent
+
+
 @runtime_checkable
-class IMarketDataProvider(Protocol):
-    """Protocol for real-time and replay market data feeds."""
+class IRealtimeMarketDataProvider(Protocol):
+    """Protocol for real-time market data providers with connection and subscription management."""
 
     def connect(self) -> None:
         """Establish connection to data stream."""
@@ -29,6 +32,10 @@ class IMarketDataProvider(Protocol):
         """Return True if connection is alive."""
         ...
 
+    def get_connection_status(self) -> ConnectionStatus:
+        """Return detailed connection lifecycle status."""
+        ...
+
     def subscribe(self, symbols: List[str]) -> None:
         """Subscribe to real-time quotes/ticks for given symbols."""
         ...
@@ -37,9 +44,22 @@ class IMarketDataProvider(Protocol):
         """Unsubscribe from real-time quotes/ticks."""
         ...
 
+    def get_subscriptions(self) -> set[str]:
+        """Return set of currently subscribed symbols."""
+        ...
+
+    def register_event_listener(self, listener: Callable[[MarketDataEvent], None]) -> None:
+        """Register callback for normalized market data events."""
+        ...
+
     def register_tick_handler(self, handler: Callable[[Tick], None]) -> None:
         """Register callback for incoming ticks."""
         ...
+
+
+# Aliases for architectural requirements
+RealtimeMarketDataProvider = IRealtimeMarketDataProvider
+IMarketDataProvider = IRealtimeMarketDataProvider
 
 
 @runtime_checkable
@@ -78,6 +98,9 @@ class IHistoricalDataProvider(Protocol):
         Columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume', 'symbol']
         """
         ...
+
+
+HistoricalMarketDataProvider = IHistoricalDataProvider
 
 
 @runtime_checkable

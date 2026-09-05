@@ -9,18 +9,32 @@ from trade_bot.data.downloader import (
     CSVHistoricalDataLoader,
     YahooHistoricalDataLoader,
 )
+from trade_bot.data.events import (
+    ConnectionStatus,
+    MarketDataEvent,
+    MarketEventType,
+)
 from trade_bot.data.interfaces import (
+    HistoricalMarketDataProvider,
     ICandleAggregator,
     ICandleStorage,
     IHistoricalDataLoader,
     IHistoricalDataProvider,
     IMarketDataProvider,
+    IRealtimeMarketDataProvider,
+    RealtimeMarketDataProvider,
 )
 from trade_bot.data.memory_data_feed import InMemoryMarketDataFeed
 from trade_bot.data.normalization import (
     candles_to_dataframe,
     dataframe_to_candles,
     normalize_ohlcv_dataframe,
+)
+from trade_bot.data.pipeline import (
+    DuplicateEventFilter,
+    RealtimeCandleAggregator,
+    RealtimeMarketDataPipeline,
+    StaleDataMonitor,
 )
 from trade_bot.data.quality_report import (
     generate_data_quality_markdown,
@@ -31,6 +45,10 @@ from trade_bot.data.universe_history import (
     CORE_FNO_EQUITIES,
     HistoricalUniverseRegistry,
 )
+from trade_bot.data.upstox_realtime import (
+    UpstoxRealtimeDataAdapter,
+    UpstoxV3Decoder,
+)
 from trade_bot.data.validator import (
     CandleDataValidator,
     ValidationError,
@@ -38,12 +56,26 @@ from trade_bot.data.validator import (
 )
 
 __all__ = [
-    # Interfaces
+    # Interfaces & Protocols
     "ICandleAggregator",
     "ICandleStorage",
     "IHistoricalDataLoader",
     "IHistoricalDataProvider",
+    "HistoricalMarketDataProvider",
     "IMarketDataProvider",
+    "IRealtimeMarketDataProvider",
+    "RealtimeMarketDataProvider",
+    # Real-Time Events & Status
+    "ConnectionStatus",
+    "MarketEventType",
+    "MarketDataEvent",
+    # Real-Time Pipeline & Cleansing
+    "DuplicateEventFilter",
+    "StaleDataMonitor",
+    "RealtimeCandleAggregator",
+    "RealtimeMarketDataPipeline",
+    "UpstoxRealtimeDataAdapter",
+    "UpstoxV3Decoder",
     # Calendar & Session
     "NSETradingCalendar",
     "NSE_HOLIDAYS",
@@ -68,3 +100,4 @@ __all__ = [
     "CORE_FNO_EQUITIES",
     "HistoricalUniverseRegistry",
 ]
+
