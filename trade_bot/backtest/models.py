@@ -111,10 +111,11 @@ class BacktestResult:
     orders: List[Order]
     execution_start_time: Optional[datetime] = None
     execution_end_time: Optional[datetime] = None
+    aggregate_cost_report: Optional[Any] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert result summary to clean serializable dictionary."""
-        return {
+        d: Dict[str, Any] = {
             "metrics": {
                 "total_trades": self.metrics.total_trades,
                 "winning_trades": self.metrics.winning_trades,
@@ -147,3 +148,9 @@ class BacktestResult:
             ],
             "total_completed_trades": len(self.completed_trades),
         }
+        if self.aggregate_cost_report is not None:
+            if hasattr(self.aggregate_cost_report, "to_dict"):
+                d["cost_report"] = self.aggregate_cost_report.to_dict()
+            else:
+                d["cost_report"] = self.aggregate_cost_report
+        return d

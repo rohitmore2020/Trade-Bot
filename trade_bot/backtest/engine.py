@@ -63,6 +63,7 @@ class BacktestEngine(IBacktestRunner):
         strategy_config: Optional[VwapOrbStrategyConfig] = None,
         risk_params: Optional[RiskParameters] = None,
         scanner: Optional[CandidateScanner] = None,
+        cost_model: Optional[Any] = None,
     ) -> None:
         self.config = config or BacktestConfig()
         self.data_feed = data_feed or HistoricalDataFeed()
@@ -101,6 +102,7 @@ class BacktestEngine(IBacktestRunner):
             slippage_per_share=self.config.slippage_per_share,
             slippage_pct=self.config.slippage_pct,
             default_limit_timeout_bars=self.config.limit_timeout_bars,
+            cost_model=cost_model,
         )
 
         # Per-symbol Strategy State
@@ -335,6 +337,7 @@ class BacktestEngine(IBacktestRunner):
             orders=self.simulator.get_all_orders(),
             execution_start_time=execution_start,
             execution_end_time=datetime.now(),
+            aggregate_cost_report=self.simulator.get_aggregate_cost_report(total_slippage=self._total_slippage),
         )
 
     def _evaluate_strategy_for_symbol(

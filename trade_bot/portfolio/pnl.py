@@ -52,19 +52,12 @@ class PnLCalculator:
         - STT: 0.025% on sell side turnover
         - NSE transaction charges: 0.00345% of turnover
         - SEBI turnover charges: ₹10 per crore (0.0001% of turnover)
+        - Stamp Duty: 0.003% on buy side turnover
         - GST: 18% on (Brokerage + Exchange charges + SEBI charges)
         """
-        turnover = price * quantity
-        if turnover <= 0:
-            return 0.0
-
-        brokerage = min(20.0, round(turnover * 0.0003, 2))
-        stt = round(turnover * 0.00025, 2) if side == OrderSide.SELL else 0.0
-        exchange_charges = round(turnover * 0.0000345, 2)
-        sebi_charges = round(turnover * 0.000001, 2)
-        gst = round((brokerage + exchange_charges + sebi_charges) * 0.18, 2)
-
-        return round(brokerage + stt + exchange_charges + sebi_charges + gst, 2)
+        from trade_bot.costs.cost_model import IndianEquityCostModel
+        bd = IndianEquityCostModel.standard().calculate_per_order_cost(price=price, quantity=quantity, side=side)
+        return bd.total_costs
 
     @staticmethod
     def calculate_slippage(

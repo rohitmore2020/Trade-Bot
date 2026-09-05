@@ -67,6 +67,15 @@ from trade_bot.domain.models import (
     Trade,
     utc_now,
 )
+from trade_bot.costs.cost_model import IndianEquityCostModel, StandardSlippageModel
+from trade_bot.costs.interfaces import ICostModel, ISlippageModel
+from trade_bot.costs.models import (
+    AggregateCostReport,
+    CostBreakdown,
+    CostModelConfig,
+    SlippageConfig,
+    SlippageModelType as CostSlippageModelType,
+)
 from trade_bot.domain.state import OrderStateMachine
 from trade_bot.execution.cost_calculator import TransactionCostCalculator
 from trade_bot.execution.models import (
@@ -91,6 +100,7 @@ class ExecutionSimulator(IBrokerAdapter):
         slippage_per_share: Optional[float] = None,
         slippage_pct: Optional[float] = None,
         default_limit_timeout_bars: Optional[int] = None,
+        cost_model: Optional[ICostModel] = None,
     ) -> None:
         if config is None:
             slip_cfg = SlippageModelConfig(
@@ -104,10 +114,35 @@ class ExecutionSimulator(IBrokerAdapter):
         else:
             self.config = config
 
-        self.cost_calculator = TransactionCostCalculator(config=self.config.costs)
+        if cost_model is not None:
+            self.cost_model: ICostModel = cost_model
+        else:
+            cost_cfg = CostModelConfig(
+                brokerage_per_order=self.config.costs.brokerage_per_order,
+                brokerage_pct_cap=self.config.costs.brokerage_pct_cap,
+                stt_sell_pct=self.config.costs.stt_intraday_sell_pct,
+                exchange_turnover_pct=self.config.costs.exchange_turnover_pct,
+                sebi_turnover_pct=self.config.costs.sebi_turnover_pct,
+                gst_pct=self.config.costs.gst_pct,
+                stamp_duty_buy_pct=self.config.costs.stamp_duty_buy_pct,
+            )
+            slip_model_cfg = SlippageConfig(
+                model_type=CostSlippageModelType(self.config.slippage.model_type.value),
+                fixed_tick_size=self.config.slippage.fixed_tick_size,
+                percentage=self.config.slippage.percentage,
+                volatility_mult=self.config.slippage.volatility_mult,
+                volume_participation_limit=self.config.slippage.volume_participation_limit,
+            )
+            self.cost_model = IndianEquityCostModel(
+                config=cost_cfg,
+                slippage_model=StandardSlippageModel(config=slip_model_cfg),
+            )
+
+        self.cost_calculator = self.cost_model
 
         self._connected: bool = True
         self._trade_callbacks: List[Callable[[Trade], None]] = []
+        self._cost_breakdowns: List[CostBreakdown] = []
 
         if portfolio_manager is not None and hasattr(portfolio_manager, "process_fill"):
             self.register_trade_callback(portfolio_manager.process_fill)
@@ -186,6 +221,10 @@ class ExecutionSimulator(IBrokerAdapter):
         Calculates per-share slippage amount based on configurable model.
         Slippage is strictly adverse (added for BUY, subtracted for SELL).
         """
+        if hasattr(self.cost_model, "slippage_model") and self.cost_model.slippage_model is not None:
+            slip_price = self.cost_model.slippage_model.calculate_slippage_price(price, side, candle)
+            return round(abs(slip_price - price), 4)
+
         slip_cfg = self.config.slippage
         if slip_cfg.model_type == SlippageModelType.FIXED_TICK:
             return slip_cfg.fixed_tick_size
@@ -480,7 +519,9 @@ class ExecutionSimulator(IBrokerAdapter):
 
     def _execute_fill(self, order: Order, price: float, quantity: int, timestamp: datetime) -> Trade:
         """Constructs confirmed Trade execution event, updates order, and triggers callbacks."""
-        brokerage, taxes = self.cost_calculator.calculate(price=price, quantity=quantity, side=order.side)
+        bd = self.cost_model.calculate_per_order_cost(price=price, quantity=quantity, side=order.side)
+        self._cost_breakdowns.append(bd)
+        brokerage, taxes = bd.brokerage, bd.total_statutory_taxes
 
         trade = Trade(
             trade_id=f"TRD_{uuid.uuid4().hex[:10].upper()}",
@@ -511,6 +552,14 @@ class ExecutionSimulator(IBrokerAdapter):
             cb(trade)
 
         return trade
+
+    def get_cost_breakdowns(self) -> List[CostBreakdown]:
+        """Returns itemized per-order cost breakdowns for all executed fills."""
+        return list(self._cost_breakdowns)
+
+    def get_aggregate_cost_report(self, total_slippage: float = 0.0) -> AggregateCostReport:
+        """Generates an aggregated cost report across all executed fills."""
+        return self.cost_model.calculate_aggregate_report(self._cost_breakdowns, total_slippage=total_slippage)
 
     # =========================================================================
     # Convenient Simulation Helpers
