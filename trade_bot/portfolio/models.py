@@ -61,6 +61,7 @@ class CompletedTrade:
     slippage: float
     net_pnl: float
     exit_reason: Optional[str] = None
+    market_regime: Optional[str] = None
 
 
 @dataclass(frozen=True, slots=True)

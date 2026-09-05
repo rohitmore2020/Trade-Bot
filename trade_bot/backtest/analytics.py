@@ -217,3 +217,29 @@ class BacktestAnalytics:
             )
 
         return summaries
+
+    @staticmethod
+    def generate_comprehensive_report(
+        initial_capital: float,
+        final_equity: float,
+        completed_trades: List[CompletedTrade],
+        equity_curve: Optional[List[Tuple[datetime, float]]] = None,
+        daily_snapshots: Optional[List[Tuple[date, float]]] = None,
+        total_turnover: float = 0.0,
+        total_slippage: float = 0.0,
+        total_costs: float = 0.0,
+        calendar_days: Optional[int] = None,
+    ) -> Any:
+        """Delegates to decoupled Phase 14 PerformanceReporter."""
+        from trade_bot.analytics.reporter import PerformanceReporter
+        return PerformanceReporter.generate_report(
+            initial_capital=initial_capital,
+            final_equity=final_equity,
+            completed_trades=completed_trades,
+            equity_curve=equity_curve,
+            daily_snapshots=daily_snapshots,
+            total_turnover=total_turnover,
+            total_slippage=total_slippage,
+            total_costs=total_costs,
+            calendar_days=calendar_days,
+        )
