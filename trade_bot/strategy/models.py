@@ -12,12 +12,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-
-class MarketRegime(str, Enum):
-    """Benchmark market regime determined by NIFTY relative to its VWAP."""
-    BULLISH = "BULLISH"  # NIFTY > VWAP -> Long only
-    BEARISH = "BEARISH"  # NIFTY < VWAP -> Short only
-    NEUTRAL = "NEUTRAL"  # NIFTY == VWAP -> No trades
+from trade_bot.domain.enums import MarketRegime
 
 
 class SignalTriggerReason(str, Enum):

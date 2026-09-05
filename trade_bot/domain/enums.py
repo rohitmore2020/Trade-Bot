@@ -73,3 +73,10 @@ class TradingSessionStatus(str, Enum):
     NO_NEW_ENTRIES = "NO_NEW_ENTRIES"
     SQUARE_OFF = "SQUARE_OFF"
     CLOSED = "CLOSED"
+
+
+class MarketRegime(str, Enum):
+    """Benchmark market regime determined by index relative to VWAP."""
+    BULLISH = "BULLISH"  # Index > VWAP -> Long only
+    BEARISH = "BEARISH"  # Index < VWAP -> Short only
+    NEUTRAL = "NEUTRAL"  # Index == VWAP -> No trades

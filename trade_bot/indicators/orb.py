@@ -1,7 +1,8 @@
 """
 Opening Range Breakout (ORB) Levels Indicator.
 
-Tracks the high, low, range, and status of the opening period (e.g. 09:15 - 09:30 IST).
+Tracks the high, low, range, and status of the opening period (09:15 - 09:30 IST).
+Strictly prevents look-ahead bias: opening range is NOT marked complete until 09:30:00 IST.
 """
 
 from __future__ import annotations
@@ -25,6 +26,9 @@ class ORBLevels:
 class OpeningRangeCalculator:
     """
     Computes Opening Range high, low, and range for a configurable time window.
+    Default: 09:15 to 09:30 IST (first 15 minutes of regular NSE trading).
+    For 5-minute bars, bars opening at 09:15, 09:20, and 09:25 constitute the range.
+    At 09:30 (close of 09:25 bar or arrival of 09:30 bar), the range is marked complete.
     """
 
     def __init__(
@@ -41,6 +45,7 @@ class OpeningRangeCalculator:
         self._low: Optional[float] = None
         self._is_complete: bool = False
         self._last_timestamp: Optional[datetime] = None
+        self._bars_in_range: int = 0
 
     @property
     def is_complete(self) -> bool:
@@ -60,6 +65,10 @@ class OpeningRangeCalculator:
             return round(self._high - self._low, 4)
         return None
 
+    @property
+    def bars_in_range(self) -> int:
+        return self._bars_in_range
+
     def get_levels(self) -> Optional[ORBLevels]:
         if self._high is None or self._low is None or self._last_timestamp is None:
             return None
@@ -76,23 +85,33 @@ class OpeningRangeCalculator:
         t_time = tick.timestamp.time()
         self._last_timestamp = tick.timestamp
 
-        if self.start_time <= t_time <= self.end_time:
+        if self.start_time <= t_time < self.end_time:
             self._high = max(self._high, tick.last_price) if self._high is not None else tick.last_price
             self._low = min(self._low, tick.last_price) if self._low is not None else tick.last_price
-        elif t_time > self.end_time and self._high is not None:
+        elif t_time >= self.end_time and self._high is not None:
             self._is_complete = True
 
         return self.get_levels()
 
     def update_candle(self, candle: Candle) -> Optional[ORBLevels]:
-        """Update ORB with incoming candle."""
+        """
+        Update ORB with incoming candle.
+        Assumes candle timestamp is bar OPEN timestamp.
+        Candles opening at 09:15, 09:20, 09:25 are inside [09:15, 09:30).
+        A candle opening at 09:30 is outside and signals OR completion.
+        """
         c_time = candle.timestamp.time()
         self._last_timestamp = candle.timestamp
 
-        if self.start_time <= c_time <= self.end_time:
+        if self.start_time <= c_time < self.end_time:
             self._high = max(self._high, candle.high) if self._high is not None else candle.high
             self._low = min(self._low, candle.low) if self._low is not None else candle.low
-        elif c_time > self.end_time and self._high is not None:
+            self._bars_in_range += 1
+            # If 3 bars have been accumulated (for 5m timeframe, 09:15 to 09:30 = 3 bars)
+            # and candle is closed, range can also be considered complete
+            if candle.timeframe_seconds == 300 and self._bars_in_range >= 3 and candle.is_closed:
+                self._is_complete = True
+        elif c_time >= self.end_time and self._high is not None:
             self._is_complete = True
 
         return self.get_levels()
@@ -103,3 +122,4 @@ class OpeningRangeCalculator:
         self._low = None
         self._is_complete = False
         self._last_timestamp = None
+        self._bars_in_range = 0

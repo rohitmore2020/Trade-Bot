@@ -1,12 +1,15 @@
 """
-Indicator Interfaces and Protocols.
+Indicator Interfaces, Protocols, and Value Objects.
 
 Ensures all mathematical and technical indicators are deterministic, pure, and state-isolated.
 """
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Optional, Protocol, runtime_checkable
+from trade_bot.domain.enums import MarketRegime
 from trade_bot.domain.models import Candle, Tick
 
 
@@ -30,3 +33,28 @@ class IIndicator(Protocol):
     def reset(self) -> None:
         """Reset indicator state (e.g., at daily session start)."""
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class IndicatorSnapshot:
+    """
+    Immutable snapshot of all indicator values for an instrument at candle t.
+    Guarantees no look-ahead bias: only values derived from candles <= t are present.
+    """
+    symbol: str
+    timestamp: datetime
+    close: float
+    vwap: Optional[float]
+    atr_14: Optional[float]
+    orb_high: Optional[float]
+    orb_low: Optional[float]
+    orb_is_complete: bool
+    prev_avg_volume_10: Optional[float]
+    current_volume: int
+    volume_surge_ratio: Optional[float]
+    gap_pct: Optional[float]
+    nifty_close: Optional[float] = None
+    nifty_vwap: Optional[float] = None
+    nifty_regime: Optional[MarketRegime] = None
+    india_vix: Optional[float] = None
+    vix_is_acceptable: bool = True
