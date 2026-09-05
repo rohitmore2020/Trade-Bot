@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from trade_bot.domain.enums import MarketRegime
+from trade_bot.domain.enums import MarketRegime, SignalDirection
 
 
 class SignalTriggerReason(str, Enum):
@@ -134,3 +134,45 @@ class PositionSizingResult:
     total_risk_amount: float
     notional_value: float
     is_capital_capped: bool
+
+
+@dataclass(frozen=True, slots=True)
+class VwapOrbSignal:
+    """
+    Strongly typed, deterministic strategy signal emitted by VWAP-ORB engine.
+    Completely decoupled from broker implementations.
+    """
+    timestamp: datetime
+    symbol: str
+    direction: SignalDirection
+    signal_price: float
+    entry_price: float
+    stop_price: float
+    atr: float
+    vwap: float
+    or_high: float
+    or_low: float
+    volume_ratio: float
+    reason: str
+    strategy_version: str = "1.0.0"
+    suggested_quantity: Optional[int] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ActiveTradeState:
+    """
+    Tracks state of an active trade within the strategy engine for trailing stops and exits.
+    """
+    symbol: str
+    direction: SignalDirection
+    entry_timestamp: datetime
+    entry_price: float
+    initial_stop: float
+    current_stop: float
+    highest_price: float
+    lowest_price: float
+    status: str = "OPEN"  # "OPEN" or "CLOSED"
+    exit_timestamp: Optional[datetime] = None
+    exit_price: Optional[float] = None
+    exit_reason: Optional[str] = None
