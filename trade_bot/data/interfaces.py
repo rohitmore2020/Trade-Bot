@@ -1,13 +1,15 @@
 """
 Market Data Interfaces and Abstractions.
 
-Defines protocols for streaming tick providers, historical data loaders, and candle aggregators.
+Defines protocols for streaming tick providers, historical data loaders,
+candle aggregators, local storage repositories, and data quality validators.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Callable, List, Optional, Protocol, runtime_checkable
+from datetime import date, datetime
+from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
+import pandas as pd
 from trade_bot.domain.models import Candle, Tick
 
 
@@ -52,6 +54,62 @@ class IHistoricalDataLoader(Protocol):
         end_time: datetime,
     ) -> List[Candle]:
         """Load historical candles for a symbol within time range."""
+        ...
+
+
+@runtime_checkable
+class IHistoricalDataProvider(Protocol):
+    """Protocol for downloading and querying historical market data from external APIs."""
+
+    @property
+    def source_name(self) -> str:
+        """Identifier for the data vendor/provider."""
+        ...
+
+    def fetch_ohlcv(
+        self,
+        symbol: str,
+        timeframe_seconds: int,
+        start_date: date,
+        end_date: date,
+    ) -> pd.DataFrame:
+        """
+        Fetch historical OHLCV data as a standardized pandas DataFrame.
+        Columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume', 'symbol']
+        """
+        ...
+
+
+@runtime_checkable
+class ICandleStorage(Protocol):
+    """Protocol for persisting and retrieving normalized historical candle datasets."""
+
+    def store_candles(self, candles: List[Candle] | pd.DataFrame, symbol: str, timeframe_seconds: int) -> int:
+        """Persist candles to local storage. Returns count of rows written."""
+        ...
+
+    def load_candles(
+        self,
+        symbol: str,
+        timeframe_seconds: int,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+    ) -> List[Candle]:
+        """Load normalized candles as domain models."""
+        ...
+
+    def load_dataframe(
+        self,
+        symbol: str,
+        timeframe_seconds: int,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+    ) -> pd.DataFrame:
+        """Load normalized candles directly as a pandas DataFrame."""
+        ...
+
+    def list_stored_symbols(self, timeframe_seconds: int) -> List[str]:
+        """Return all symbols available in local storage for a given timeframe."""
         ...
 
 
