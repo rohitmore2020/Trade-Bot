@@ -9,10 +9,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, time
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from trade_bot.domain.enums import MarketRegime, SignalDirection
+from trade_bot.domain.enums import MarketRegime, OrderSide, SignalDirection, TradingSessionStatus
+from trade_bot.domain.models import Candle, Instrument
+
+if TYPE_CHECKING:
+    from trade_bot.strategy.state import StrategyTradeState
 
 
 class SignalTriggerReason(str, Enum):
@@ -22,11 +26,22 @@ class SignalTriggerReason(str, Enum):
     REGIME_MISMATCH = "REGIME_MISMATCH"
     OUTSIDE_TRADING_WINDOW = "OUTSIDE_TRADING_WINDOW"
     NO_PULLBACK = "NO_PULLBACK"
+    PULLBACK_REJECTION = "PULLBACK_REJECTION"
     NOT_BULLISH_CANDLE = "NOT_BULLISH_CANDLE"
     NOT_BEARISH_CANDLE = "NOT_BEARISH_CANDLE"
+    CANDLE_REJECTION = "CANDLE_REJECTION"
     VOLUME_SURGE_UNMET = "VOLUME_SURGE_UNMET"
+    VOLUME_REJECTION = "VOLUME_REJECTION"
     ORB_CONDITION_UNMET = "ORB_CONDITION_UNMET"
+    ORB_REJECTION = "ORB_REJECTION"
+    VWAP_REJECTION = "VWAP_REJECTION"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    DUPLICATE_SIGNAL = "DUPLICATE_SIGNAL"
+    REENTRY_LIMIT_REACHED = "REENTRY_LIMIT_REACHED"
+    INITIAL_STOP_EXIT = "INITIAL_STOP_EXIT"
+    TRAILING_STOP_EXIT = "TRAILING_STOP_EXIT"
+    VWAP_FAILURE_EXIT = "VWAP_FAILURE_EXIT"
+    TIME_EXIT = "TIME_EXIT"
 
 
 class VwapOrbStrategyConfig(BaseModel):
@@ -176,3 +191,63 @@ class ActiveTradeState:
     exit_timestamp: Optional[datetime] = None
     exit_price: Optional[float] = None
     exit_reason: Optional[str] = None
+
+
+@dataclass(frozen=True, slots=True)
+class TradeIntent:
+    """
+    Strongly typed Signal / TradeIntent domain object emitted by pure strategy.
+    Contains full auditability and parameters for downstream risk and execution.
+    """
+    strategy_version: str
+    timestamp: datetime
+    instrument: Instrument
+    side: OrderSide
+    signal_price: float
+    proposed_entry_price: float
+    proposed_stop_price: float
+    atr: float
+    vwap: float
+    or_high: float
+    or_low: float
+    volume_ratio: float
+    signal_reason: str
+    intent_type: str = "ENTRY"  # "ENTRY" or "EXIT"
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def symbol(self) -> str:
+        return self.instrument.symbol
+
+    @property
+    def direction(self) -> SignalDirection:
+        return SignalDirection.LONG if self.side == OrderSide.BUY else SignalDirection.SHORT
+
+
+@dataclass(frozen=True, slots=True)
+class StrategyMarketInput:
+    """
+    Strongly typed market information context injected into the pure strategy.
+    The strategy receives this data and does NOT fetch anything itself.
+    """
+    candle: Candle
+    stock_vwap: float
+    atr: float
+    opening_range_high: float
+    opening_range_low: float
+    volume_sma_10: float
+    volume_ratio: float
+    market_regime: MarketRegime
+    current_trading_session: TradingSessionStatus
+    current_strategy_state: StrategyTradeState
+    nifty_price: Optional[float] = None
+    nifty_vwap: Optional[float] = None
+    nifty_candle: Optional[Candle] = None
+    instrument: Optional[Instrument] = None
+
+    @property
+    def symbol(self) -> str:
+        return self.candle.symbol
+
+    def get_instrument(self) -> Instrument:
+        return self.instrument or Instrument(symbol=self.candle.symbol)

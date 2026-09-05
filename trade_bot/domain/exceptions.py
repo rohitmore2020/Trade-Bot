@@ -129,3 +129,14 @@ class MissingMarketDataError(MarketDataError):
 class StateInconsistencyError(TradingPlatformError):
     """CRITICAL: Raised when an irreconcilable state discrepancy is detected (e.g. broker vs local position)."""
     pass
+
+
+class InvalidStrategyStateTransitionError(TradingPlatformError):
+    """Raised when an illegal strategy state transition is attempted."""
+    pass
+
+
+class DuplicateSignalError(TradingPlatformError):
+    """Raised when an illegal duplicate strategy signal is emitted."""
+    pass
+
