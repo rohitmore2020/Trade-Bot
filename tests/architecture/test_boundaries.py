@@ -123,3 +123,43 @@ def test_risk_layer_has_zero_infrastructure_dependencies() -> None:
                         )
 
 
+def test_portfolio_layer_has_zero_infrastructure_dependencies() -> None:
+    portfolio_dir = Path("trade_bot/portfolio")
+    assert portfolio_dir.exists()
+
+    forbidden_patterns = [
+        "trade_bot.broker",
+        "trade_bot.persistence",
+        "trade_bot.execution",
+        "trade_bot.orchestration",
+        "requests",
+        "httpx",
+        "aiohttp",
+        "websockets",
+        "upstox",
+        "sqlite3",
+        "duckdb",
+    ]
+
+    for py_file in portfolio_dir.glob("*.py"):
+        content = py_file.read_text(encoding="utf-8")
+        tree = ast.parse(content, filename=str(py_file))
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    for forbidden in forbidden_patterns:
+                        assert not alias.name.startswith(forbidden), (
+                            f"Architectural boundary violation: {py_file} imports '{alias.name}', "
+                            f"which violates pure portfolio domain isolation from '{forbidden}'."
+                        )
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    for forbidden in forbidden_patterns:
+                        assert not node.module.startswith(forbidden), (
+                            f"Architectural boundary violation: {py_file} imports from '{node.module}', "
+                            f"which violates pure portfolio domain isolation from '{forbidden}'."
+                        )
+
+
+

@@ -25,6 +25,7 @@ class OrderStateMachine:
     VALID_TRANSITIONS: Dict[OrderStatus, Set[OrderStatus]] = {
         OrderStatus.CREATED: {
             OrderStatus.PENDING_SUBMIT,
+            OrderStatus.SUBMITTED,
             OrderStatus.REJECTED,
             OrderStatus.CANCELLED,
         },
@@ -33,6 +34,7 @@ class OrderStateMachine:
             OrderStatus.ACKNOWLEDGED,
             OrderStatus.PARTIALLY_FILLED,
             OrderStatus.FILLED,
+            OrderStatus.CANCEL_REQUESTED,
             OrderStatus.REJECTED,
             OrderStatus.CANCELLED,
         },
@@ -40,6 +42,7 @@ class OrderStateMachine:
             OrderStatus.ACKNOWLEDGED,
             OrderStatus.PARTIALLY_FILLED,
             OrderStatus.FILLED,
+            OrderStatus.CANCEL_REQUESTED,
             OrderStatus.CANCELLED,
             OrderStatus.REJECTED,
             OrderStatus.EXPIRED,
@@ -47,6 +50,7 @@ class OrderStateMachine:
         OrderStatus.ACKNOWLEDGED: {
             OrderStatus.PARTIALLY_FILLED,
             OrderStatus.FILLED,
+            OrderStatus.CANCEL_REQUESTED,
             OrderStatus.CANCELLED,
             OrderStatus.REJECTED,
             OrderStatus.EXPIRED,
@@ -54,7 +58,15 @@ class OrderStateMachine:
         OrderStatus.PARTIALLY_FILLED: {
             OrderStatus.PARTIALLY_FILLED,
             OrderStatus.FILLED,
+            OrderStatus.CANCEL_REQUESTED,
             OrderStatus.CANCELLED,
+            OrderStatus.EXPIRED,
+        },
+        OrderStatus.CANCEL_REQUESTED: {
+            OrderStatus.CANCELLED,
+            OrderStatus.PARTIALLY_FILLED,
+            OrderStatus.FILLED,
+            OrderStatus.REJECTED,
             OrderStatus.EXPIRED,
         },
         OrderStatus.FILLED: set(),

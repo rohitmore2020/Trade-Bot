@@ -6,8 +6,9 @@ Defines contracts for position accounting, balance calculation, and P&L tracking
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Protocol, runtime_checkable
+from typing import Dict, List, Optional, Protocol, Union, runtime_checkable
 from trade_bot.domain.models import AccountBalance, Position, Trade
+from trade_bot.portfolio.models import Fill, PortfolioSnapshot
 
 
 @runtime_checkable
@@ -30,10 +31,14 @@ class IPortfolioManager(Protocol):
         """Return list of all non-flat positions."""
         ...
 
-    def process_fill(self, trade: Trade) -> Position:
+    def process_fill(self, fill: Union[Fill, Trade]) -> Position:
         """Process an execution fill and update position & cash balances."""
         ...
 
     def update_market_price(self, symbol: str, current_price: float) -> None:
         """Update unrealized P&L given latest market price."""
+        ...
+
+    def get_portfolio_snapshot(self) -> PortfolioSnapshot:
+        """Return comprehensive point-in-time portfolio snapshot."""
         ...
