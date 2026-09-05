@@ -36,6 +36,18 @@ class IIndicator(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
+class MarketDataInput:
+    """
+    Explicit, strongly typed market data container provided as input to the indicator engine.
+    Allows passing stock candle along with optional macro context (NIFTY benchmark and India VIX).
+    """
+    candle: Candle
+    is_forming: bool = False
+    nifty_candle: Optional[Candle] = None
+    india_vix: Optional[float] = None
+
+
+@dataclass(frozen=True, slots=True)
 class IndicatorSnapshot:
     """
     Immutable snapshot of all indicator values for an instrument at candle t.
@@ -58,3 +70,13 @@ class IndicatorSnapshot:
     nifty_regime: Optional[MarketRegime] = None
     india_vix: Optional[float] = None
     vix_is_acceptable: bool = True
+
+    @property
+    def session_vwap(self) -> Optional[float]:
+        """Alias for vwap to match strategy spec nomenclature."""
+        return self.vwap
+
+    @property
+    def volume_ratio(self) -> Optional[float]:
+        """Alias for volume_surge_ratio to match strategy spec nomenclature."""
+        return self.volume_surge_ratio
