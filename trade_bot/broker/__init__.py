@@ -11,12 +11,15 @@ from trade_bot.broker.paper_models import (
     PaperBrokerConfig,
 )
 from trade_bot.broker.upstox_adapter import UpstoxBrokerAdapter
+from trade_bot.broker.upstox_auth import UpstoxAuthToken, UpstoxOAuthHandler
 
 __all__ = [
     "BacktestBrokerAdapter",
     "IBrokerAdapter",
     "PaperBrokerAdapter",
     "UpstoxBrokerAdapter",
+    "UpstoxAuthToken",
+    "UpstoxOAuthHandler",
     "ExecutionStage",
     "ExecutionLogEntry",
     "PaperBrokerConfig",

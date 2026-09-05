@@ -106,6 +106,9 @@ class BrokerAuthenticationError(BrokerAdapterError):
     pass
 
 
+AuthenticationError = BrokerAuthenticationError
+
+
 class BrokerRateLimitError(BrokerAdapterError):
     """Raised when broker API rate limits are exceeded."""
     pass
@@ -138,5 +141,30 @@ class InvalidStrategyStateTransitionError(TradingPlatformError):
 
 class DuplicateSignalError(TradingPlatformError):
     """Raised when an illegal duplicate strategy signal is emitted."""
+    pass
+
+
+class ProtectiveStopLossError(OrderExecutionError):
+    """CRITICAL: Raised when placement or creation of a protective stop loss order fails."""
+    pass
+
+
+class InvalidStopLossModificationError(OrderExecutionError):
+    """Raised when an order modification attempts to loosen risk on an existing stop loss."""
+    pass
+
+
+class EmergencyExitTriggeredError(TradingPlatformError):
+    """CRITICAL: Raised when an emergency exit procedure is initiated."""
+    pass
+
+
+class ReconciliationError(TradingPlatformError):
+    """Base exception for broker and internal state reconciliation failures."""
+    pass
+
+
+class CriticalStateDiscrepancyError(ReconciliationError):
+    """CRITICAL: Raised when an unresolvable state discrepancy between broker and bot halts trading."""
     pass
 

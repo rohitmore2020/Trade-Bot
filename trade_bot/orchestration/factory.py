@@ -107,3 +107,73 @@ class TradingEngineFactory:
             metrics_collector=metrics_collector,
             strategy=strategy,
         )
+
+    @classmethod
+    def build_paper_application(
+        cls,
+        config: AppConfig,
+        custom_pipeline: Optional[RealtimeMarketDataPipeline] = None,
+        custom_broker: Optional[PaperBrokerAdapter] = None,
+    ) -> PaperTradingApplication:
+        """
+        Assemble the complete Phase 18 PaperTradingApplication via dependency injection.
+        Fails safely if configuration is not set to MODE=paper.
+        """
+        from trade_bot.data.memory_data_feed import InMemoryMarketDataFeed
+        from trade_bot.data.pipeline import RealtimeCandleAggregator, RealtimeMarketDataPipeline
+        from trade_bot.indicators.engine import IndicatorEngine
+        from trade_bot.orchestration.paper_application import PaperTradingApplication
+        from trade_bot.persistence.in_memory import InMemoryOrderRepository, InMemoryTradeRepository
+        from trade_bot.risk.decision_engine import RiskDecisionEngine
+        from trade_bot.scanner.scanner import CandidateScanner
+        from trade_bot.strategy.engine import VWAPORBStrategyEngine
+
+        if config.system.mode != ExecutionMode.PAPER:
+            raise ConfigurationError(
+                f"PaperTradingApplication requires MODE=paper, got MODE={config.system.mode.value}. "
+                "Failing safely to prevent unintended execution."
+            )
+
+        # Observability
+        configure_logging(config.logging)
+        audit_logger = AuditLogger(audit_dir=config.logging.audit_dir)
+        metrics_collector = MetricsCollector()
+
+        # Pipeline & Execution
+        if custom_pipeline:
+            pipeline = custom_pipeline
+        else:
+            feed = InMemoryMarketDataFeed()
+            pipeline = RealtimeMarketDataPipeline(
+                provider=feed,
+                candle_aggregator=RealtimeCandleAggregator(timeframe_seconds=300),
+            )
+
+        broker = custom_broker or PaperBrokerAdapter(config=config.broker)
+
+        # Core Engines
+        indicator_engine = IndicatorEngine()
+        scanner = CandidateScanner()
+        strategy_engine = VWAPORBStrategyEngine()
+        risk_engine = RiskDecisionEngine()
+        portfolio = PortfolioManager(initial_capital=config.risk.initial_capital)
+
+        # Persistence
+        order_repo = InMemoryOrderRepository()
+        trade_repo = InMemoryTradeRepository()
+
+        return PaperTradingApplication(
+            config=config,
+            market_data_pipeline=pipeline,
+            indicator_engine=indicator_engine,
+            scanner=scanner,
+            strategy_engine=strategy_engine,
+            risk_engine=risk_engine,
+            broker=broker,
+            portfolio=portfolio,
+            order_repository=order_repo,
+            trade_repository=trade_repo,
+            audit_logger=audit_logger,
+            metrics_collector=metrics_collector,
+        )
+

@@ -247,6 +247,21 @@ class IndicatorEngine:
     # Convenience Query Methods
     # ==========================================================================
 
+    def set_previous_day_close(self, symbol: str, prev_close: float) -> None:
+        """Set previous session's closing price for morning gap and ATR initialization."""
+        coord = self._get_or_create_coordinator(symbol)
+        coord.set_previous_day_close(prev_close)
+
+    def set_initial_atr(self, symbol: str, atr_val: float) -> None:
+        """Seed initial ATR baseline for a symbol."""
+        coord = self._get_or_create_coordinator(symbol)
+        coord.set_initial_atr(atr_val)
+
+    def seed_volume_history(self, symbol: str, volumes: List[int]) -> None:
+        """Pre-seed volume moving average history for a symbol."""
+        coord = self._get_or_create_coordinator(symbol)
+        coord.seed_volume_history(volumes)
+
     def get_snapshot(self, symbol: str) -> Optional[IndicatorSnapshot]:
         return self._latest_snapshots.get(symbol.upper().strip())
 

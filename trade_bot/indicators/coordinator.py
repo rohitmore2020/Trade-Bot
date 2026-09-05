@@ -51,6 +51,14 @@ class StockIndicatorCoordinator:
         self._prev_day_close = prev_close
         self.atr_calc.set_previous_close(prev_close)
 
+    def set_initial_atr(self, atr_val: float) -> None:
+        """Seed initial ATR baseline."""
+        self.atr_calc.set_initial_atr(atr_val)
+
+    def seed_volume_history(self, volumes: List[int]) -> None:
+        """Pre-seed historical volume moving average."""
+        self.volume_sma_calc.seed_historical_volumes(volumes)
+
     def start_new_session(self, prev_day_close: Optional[float] = None) -> None:
         """
         Handle daily session boundary (09:15:00 IST).

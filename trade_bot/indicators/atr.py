@@ -85,6 +85,12 @@ class ATRCalculator:
             return None
         return round(((self._current_atr * (self.period - 1)) + tr) / self.period, 4)
 
+    def set_initial_atr(self, atr_val: float) -> None:
+        """
+        Explicitly seed initial ATR baseline (e.g. from historical data or pre-market screening).
+        """
+        self._current_atr = round(float(atr_val), 4)
+
     def set_previous_close(self, prev_close: float) -> None:
         """
         Explicitly set previous day's official close for the first morning bar TR calculation.

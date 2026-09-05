@@ -19,6 +19,7 @@ MARKET_CLOSE_TIME = time(15, 30, 0)
 # Intraday Strategy Operational Timings
 ORB_START_TIME = time(9, 15, 0)
 ORB_END_TIME = time(9, 30, 0)  # Default 15-minute Opening Range
+SQUARE_OFF_TIME = time(14, 30, 0)  # Strategy 14:30 square-off cutoff
 NO_NEW_ENTRIES_TIME = time(15, 0, 0)  # Stop opening new positions
 INTRADAY_SQUARE_OFF_TIME = time(15, 15, 0)  # Mandatory square-off for MIS orders
 

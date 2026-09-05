@@ -36,6 +36,9 @@ class InMemoryMarketDataFeed(IMarketDataProvider):
     def unsubscribe(self, symbols: List[str]) -> None:
         self._subscriptions.difference_update(symbols)
 
+    def get_subscriptions(self) -> set[str]:
+        return set(self._subscriptions)
+
     def register_tick_handler(self, handler: Callable[[Tick], None]) -> None:
         self._tick_handlers.append(handler)
 

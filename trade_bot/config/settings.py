@@ -82,6 +82,12 @@ class BrokerConfig(BaseModel):
     api_secret: Optional[str] = None
     redirect_uri: Optional[str] = None
     access_token: Optional[str] = None
+    base_url: str = "https://api.upstox.com/v2"
+    order_base_url: str = "https://api-hft.upstox.com/v2"
+    allow_live_trading: bool = False
+    timeout_seconds: float = 10.0
+    max_retries: int = 3
+    retry_backoff_base: float = 1.5
     slippage_model: SlippageConfig = Field(default_factory=SlippageConfig)
     commission_model: CommissionConfig = Field(default_factory=CommissionConfig)
 
